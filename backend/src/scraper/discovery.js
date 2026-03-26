@@ -2,7 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 // Descoberta via Regex e Crawler Interno
 
-async function discoverPages(baseUrl, maxPages = 10, maxDepth = 2) {
+async function discoverPages(baseUrl, maxPages = 30, maxDepth = 2) {
   const discovered = new Set([baseUrl]);
   const queue = [{ url: baseUrl, depth: 0 }];
   const baseDomain = new URL(baseUrl).hostname;

@@ -14,7 +14,10 @@ import {
   LayoutDashboard,
   LogOut,
   Globe,
-  RefreshCw
+  RefreshCw,
+  Key,
+  X,
+  Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +27,12 @@ const Dashboard = () => {
   const [newUrl, setNewUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState('');
   const navigate = useNavigate();
 
   const fetchTasks = async () => {
@@ -54,6 +63,31 @@ const Dashboard = () => {
       setError(err.response?.data?.error || 'Erro ao criar auditoria');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdError('');
+    setPwdSuccess('');
+    
+    if (newPassword !== confirmNewPassword) {
+      setPwdError('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+    
+    try {
+      await api.put('/auth/password', { currentPassword, newPassword });
+      setPwdSuccess('Senha atualizada com sucesso!');
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setPwdSuccess('');
+      }, 2000);
+    } catch (err) {
+      setPwdError(err.response?.data?.error || 'Erro ao alterar senha');
     }
   };
 
@@ -117,9 +151,14 @@ const Dashboard = () => {
              <p className="text-sm font-medium">{user.username}</p>
              <p className="text-xs text-zinc-500 uppercase tracking-widest">Colaborador</p>
           </div>
-          <button onClick={logout} className="p-2 hover:bg-danger/10 text-zinc-400 hover:text-danger border border-white/5 hover:border-danger/20 rounded-lg transition-all">
-             <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowPasswordModal(true)} className="p-2 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/5 hover:border-white/20 rounded-lg transition-all" title="Alterar Senha">
+               <Key className="w-5 h-5" />
+            </button>
+            <button onClick={logout} className="p-2 hover:bg-danger/10 text-zinc-400 hover:text-danger border border-white/5 hover:border-danger/20 rounded-lg transition-all" title="Sair">
+               <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -229,9 +268,96 @@ const Dashboard = () => {
                   ))
                 )}
              </AnimatePresence>
-          </div>
+           </div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-zinc-900 border border-white/10 rounded-3xl p-8 w-full max-w-sm flex flex-col shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowPasswordModal(false)}
+                className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white transition-all rounded-full hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                  <Key className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-xl font-bold">Alterar Senha</h2>
+                <p className="text-sm text-zinc-500 mt-1">Defina uma nova senha segura</p>
+              </div>
+
+              {pwdError && <div className="p-3 mb-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm">{pwdError}</div>}
+              {pwdSuccess && <div className="p-3 mb-4 rounded-xl bg-success/10 border border-success/20 text-success text-sm">{pwdSuccess}</div>}
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5">Senha Atual</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+                    <input 
+                      type="password" 
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      disabled={!!pwdSuccess}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm focus:border-white/40 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5">Nova Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+                    <input 
+                      type="password" 
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={!!pwdSuccess}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm focus:border-white/40 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5">Confirmar Nova Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+                    <input 
+                      type="password" 
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      disabled={!!pwdSuccess}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm focus:border-white/40 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={!!pwdSuccess}
+                  className="w-full bg-white text-black font-bold rounded-xl py-2.5 mt-2 hover:bg-zinc-200 transition-all disabled:opacity-50"
+                >
+                  Salvar Nova Senha
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
