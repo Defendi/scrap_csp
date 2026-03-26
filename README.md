@@ -27,23 +27,27 @@ Siga estes passos para rodar o projeto em seu ambiente de desenvolvimento.
 ### 2. Configurar o Backend:
 
 1. Crie um banco de dados chamado `scrap_csp` no seu PostgreSQL.
+
 2. Entre na pasta `/backend`:
    
    ```bash
    cd backend
    npm install
    ```
+
 3. Configure o arquivo `.env` com sua URL de conexão e uma chave JWT:
    
    ```env
    DATABASE_URL=postgres://usuario:senha@localhost:5432/scrap_csp
    JWT_SECRET=sua_chave_secreta_aqui
    ```
+
 4. Execute o script de inicialização do banco de dados:
    
    ```bash
    node setup_db.js
    ```
+
 5. Inicie a API e o Motor de Auditoria (duas abas do terminal):
    
    ```bash

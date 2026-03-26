@@ -9,7 +9,20 @@ const SLEEP_MS = 5000;
 async function processTasks() {
   console.log('[Worker] Iniciando processamento de tarefas...');
 
+  // Auto-recuperação: Volta tarefas presas em PROCESSING (devido a falhas antigas ou crash do container) para PENDING
+  try {
+    const resetResult = await db.query(
+      "UPDATE tasks SET status = 'PENDING', updated_at = NOW() WHERE status = 'PROCESSING' RETURNING id"
+    );
+    if (resetResult.rows.length > 0) {
+      console.log(`[Worker] Reparado: ${resetResult.rows.length} tarefas travadas foram devolvidas para PENDING.`);
+    }
+  } catch (err) {
+    console.error('[Worker] Falha ao tentar resetar tarefas presas:', err.message);
+  }
+
   while (true) {
+    let currentTask = null;
     try {
       // 1. Buscar a tarefa PENDENTE mais antiga
       const result = await db.query(
@@ -21,7 +34,8 @@ async function processTasks() {
         continue;
       }
 
-      const task = result.rows[0];
+      currentTask = result.rows[0];
+      const task = currentTask;
       console.log(`[Worker] Processando Task ID: ${task.id} para ${task.target_url}`);
 
       // FASE 1: Descoberta Recursiva
@@ -42,8 +56,9 @@ async function processTasks() {
         // Escanear
         const scanResult = await scanPage(url);
         
-        // Salvar recursos encontrados
+        // Salvar recursos encontrados -> Protegido com filtro para evitar Null values no db se algo crachar mal
         for (const res of scanResult.resources) {
+            if (!res.domain || !res.url) continue;
             await db.query(
                'INSERT INTO resources_found (page_id, type, domain, source_url) VALUES ($1, $2, $3, $4)',
                [pageId, res.type, res.domain, res.url]
@@ -70,8 +85,15 @@ async function processTasks() {
       console.log(`[Worker] Task ID: ${task.id} finalizada com sucesso.`);
 
     } catch (err) {
-      console.error('[Worker] Erro crítico:', err.message);
-      // Aqui poderíamos atualizar a task para 'FAILED' se o erro for fatal para a tarefa
+      console.error('[Worker] Erro crítico processing task:', err.message);
+      if (currentTask && currentTask.id) {
+         try {
+           await db.query('UPDATE tasks SET status = \'FAILED\', updated_at = NOW() WHERE id = $1', [currentTask.id]);
+           console.log(`[Worker] Task ID: ${currentTask.id} abortada e marcada como FAILED no BD.`);
+         } catch (dbErr) {
+           console.error('[Worker] DB Error ao tentar setar task pra FAILED:', dbErr.message);
+         }
+      }
       await new Promise(res => setTimeout(res, SLEEP_MS));
     }
   }

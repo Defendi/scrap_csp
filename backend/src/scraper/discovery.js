@@ -1,6 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const sitemaps = require('sitemaps'); // npm install sitemaps ou axios + custom parsing
+// Descoberta via Regex e Crawler Interno
 
 async function discoverPages(baseUrl, maxPages = 10, maxDepth = 2) {
   const discovered = new Set([baseUrl]);

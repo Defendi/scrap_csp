@@ -1,14 +1,6 @@
-@import "tailwindcss";
-
-@theme {
-  --color-primary: oklch(0.6 0.25 260); /* Vibrant Blue */
-  --color-secondary: oklch(0.7 0.2 190); /* Cyan/Teal */
-  --color-accent: oklch(0.6 0.3 320); /* Purple/Indigo */
-  --color-success: oklch(0.7 0.25 140); /* Neon Green */
-  --color-danger: oklch(0.6 0.25 25); /* Deep Red */
-  --color-background: oklch(0.15 0.05 260); /* Deep Dark Blue */
-  --color-surface: oklch(0.2 0.05 260 / 0.8); /* Glass effect bg */
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {

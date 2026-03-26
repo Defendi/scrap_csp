@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Status: 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'
 CREATE TYPE task_status AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
 -- Resource type: 'script', 'style', 'img', 'font', 'frame', 'media', 'other'
-CREATE TYPE resource_type AS ENUM ('script', 'style', 'img', 'font', 'frame', 'media', 'other');
+CREATE TYPE resource_type AS ENUM ('script', 'style', 'img', 'font', 'frame', 'media', 'api', 'other');
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
