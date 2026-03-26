@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS tasks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     target_url TEXT NOT NULL,
+    is_recursive BOOLEAN DEFAULT TRUE,
     status task_status DEFAULT 'PENDING',
     suggested_rule TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

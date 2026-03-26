@@ -1,7 +1,7 @@
 const db = require('../db');
 
 const createTask = async (req, res) => {
-  const { target_url } = req.body;
+  const { target_url, is_recursive = true } = req.body;
   if (!target_url) return res.status(400).json({ error: 'URL alvo é obrigatória' });
 
   // 1. Sanitização Estrutural e Protocolos
@@ -22,8 +22,8 @@ const createTask = async (req, res) => {
 
   try {
     const result = await db.query(
-      'INSERT INTO tasks (target_url) VALUES ($1) RETURNING *',
-      [parsedUrl.toString()] // URL normalizada
+      'INSERT INTO tasks (target_url, is_recursive) VALUES ($1, $2) RETURNING *',
+      [parsedUrl.toString(), is_recursive] // URL normalizada
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

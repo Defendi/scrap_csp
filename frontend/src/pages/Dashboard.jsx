@@ -20,11 +20,13 @@ import {
   Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import watermark from '../assets/watermark.png';
 
 const Dashboard = () => {
   const { user, api, logout } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [newUrl, setNewUrl] = useState('');
+  const [isRecursive, setIsRecursive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -56,7 +58,10 @@ const Dashboard = () => {
     setError('');
     setLoading(true);
     try {
-      await api.post('/tasks', { target_url: newUrl });
+      await api.post('/tasks', { 
+        target_url: newUrl,
+        is_recursive: isRecursive 
+      });
       setNewUrl('');
       fetchTasks();
     } catch (err) {
@@ -107,7 +112,10 @@ const Dashboard = () => {
     setError('');
     setLoading(true);
     try {
-      await api.post('/tasks', { target_url: url });
+      await api.post('/tasks', { 
+        target_url: url,
+        is_recursive: isRecursive // Repete usando a configuração atual do seletor
+      });
       fetchTasks();
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao repetir auditoria');
@@ -137,14 +145,20 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white p-6 md:p-10">
+    <div className="min-h-screen bg-background text-white p-6 md:p-10 relative overflow-hidden">
+      {/* Marca d'água de fundo */}
+      <img 
+        src={watermark} 
+        alt="Watermark" 
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.03] pointer-events-none z-0 select-none grayscale"
+      />
       {/* Header */}
       <header className="max-w-7xl mx-auto flex justify-between items-center mb-12">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
             <LayoutDashboard className="text-primary w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard de Auditoria</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Painel de Segurança</h1>
         </div>
         <div className="flex items-center gap-6">
           <div className="hidden md:block text-right">
@@ -166,47 +180,77 @@ const Dashboard = () => {
       <main className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Create Task Card */}
-          <section className="lg:col-span-4 glass p-8 rounded-3xl mb-4 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-             <div className="relative z-10">
-                <h2 className="text-xl font-bold mb-2">Nova Auditoria Recursiva</h2>
-                <p className="text-zinc-100/60 text-sm mb-6">Insira a URL raiz para escanear até 10 páginas e gerar uma política CSP robusta.</p>
-                <form onSubmit={handleCreate} className="flex gap-4">
-                   <div className="flex-1 relative">
-                      <Globe className="absolute left-4 top-4 w-5 h-5 text-zinc-500" />
-                      <input 
-                        type="url" 
-                        required
-                        placeholder="https://exemplo.com.br"
-                        value={newUrl}
-                        onChange={e => setNewUrl(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 focus:border-primary outline-none transition-all placeholder:text-zinc-600"
-                      />
-                   </div>
-                   <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2">
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                      Analisar
-                   </button>
-                </form>
-                {error && <p className="text-danger text-xs mt-3">{error}</p>}
-             </div>
-          </section>
+           <section className="lg:col-span-4 glass p-8 rounded-3xl mb-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+              <div className="relative z-10">
+                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                       <h2 className="text-xl font-bold mb-1">Nova Auditoria de Segurança</h2>
+                       <p className="text-zinc-100/60 text-sm">Monitore recursos externos e valide vulnerabilidades de CSP em tempo real.</p>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+                       <button 
+                         type="button"
+                         onClick={() => setIsRecursive(false)}
+                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isRecursive ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                       >
+                          Simples
+                       </button>
+                       <button 
+                         type="button"
+                         onClick={() => setIsRecursive(true)}
+                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isRecursive ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                       >
+                          Recursiva
+                       </button>
+                    </div>
+                 </div>
+
+                 <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                       <Globe className="absolute left-4 top-4 w-5 h-5 text-zinc-500" />
+                       <input 
+                         type="url" 
+                         required
+                         placeholder="https://sua-aplicacao.com.br"
+                         value={newUrl}
+                         onChange={e => setNewUrl(e.target.value)}
+                         className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 focus:border-primary outline-none transition-all placeholder:text-zinc-600"
+                       />
+                    </div>
+                    <button type="submit" disabled={loading} className="btn-primary flex items-center justify-center gap-2 h-[52px] px-8">
+                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                       Iniciar Análise
+                    </button>
+                 </form>
+                 
+                 <div className="mt-4 flex items-center gap-4 text-[10px] uppercase tracking-widest font-bold">
+                    <span className="text-zinc-500">Configuração Atual:</span>
+                    <span className="flex items-center gap-1.5 text-primary">
+                       <div className={`w-1.5 h-1.5 rounded-full bg-primary animate-pulse`} />
+                       {isRecursive ? 'Scan Profundo (Até 30 páginas)' : 'Verificação Pontual (URL Única)'}
+                    </span>
+                 </div>
+                 {error && <p className="text-danger text-xs mt-3">{error}</p>}
+              </div>
+           </section>
 
           {/* Stats Summary (Aggregated from tasks) */}
           <div className="lg:col-span-1 space-y-6">
              <div className="card-vibrant bg-white/5">
-                <p className="text-zinc-500 text-sm uppercase font-bold tracking-widest mb-1">Total de Tasks</p>
+                <p className="text-zinc-500 text-xs uppercase font-bold tracking-widest mb-1">Total de Monitoramentos</p>
                 <div className="flex items-baseline gap-2">
                    <h3 className="text-4xl font-black">{tasks.length}</h3>
-                   <span className="text-zinc-500 text-xs">atividades</span>
+                   <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Histórico</span>
                 </div>
              </div>
              <div className="card-vibrant bg-white/5">
-                <p className="text-zinc-500 text-sm uppercase font-bold tracking-widest mb-1">Pendentes/Em Fila</p>
+                <p className="text-zinc-500 text-xs uppercase font-bold tracking-widest mb-1">Processamento Ativo</p>
                 <div className="flex items-baseline gap-2">
                    <h3 className="text-4xl font-black text-primary">
                       {tasks.filter(t => t.status === 'PENDING' || t.status === 'PROCESSING').length}
                    </h3>
+                   <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Fila</span>
                 </div>
              </div>
           </div>

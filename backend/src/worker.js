@@ -39,8 +39,13 @@ async function processTasks() {
       console.log(`[Worker] Processando Task ID: ${task.id} para ${task.target_url}`);
 
       // FASE 1: Descoberta Recursiva
-      const urlsToScan = await discoverPages(task.target_url);
-      console.log(`[Worker] Descobertas ${urlsToScan.length} páginas para escanear.`);
+      let urlsToScan = [];
+      if (task.is_recursive) {
+        urlsToScan = await discoverPages(task.target_url);
+      } else {
+        urlsToScan = [task.target_url];
+      }
+      console.log(`[Worker] Escaneando ${urlsToScan.length} página(s). Modo: ${task.is_recursive ? 'Recursivo' : 'Simples'}`);
 
       const allPageResults = [];
 
