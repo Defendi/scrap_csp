@@ -10,7 +10,7 @@ async function discoverPages(baseUrl, maxPages = 10, maxDepth = 2) {
   // Tentar Sitemap primeiro
   try {
     const sitemapUrl = `${new URL(baseUrl).origin}/sitemap.xml`;
-    const response = await axios.get(sitemapUrl, { timeout: 5000 });
+    const response = await axios.get(sitemapUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
     if (response.status === 200) {
       // Simplificado: usar regex simples para urls de sitemap em XML se não usar lib
       const urls = response.data.match(/<loc>(.*?)<\/loc>/g);
@@ -36,7 +36,7 @@ async function discoverPages(baseUrl, maxPages = 10, maxDepth = 2) {
     if (depth >= maxDepth) continue;
 
     try {
-      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 5000 });
+      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 });
       const $ = cheerio.load(response.data);
       
       $('a[href]').each((_, el) => {

@@ -15,22 +15,42 @@ async function scanPage(url) {
 
   try {
     console.log(`[Scanner] [1/2] Análise Estática iniciada: ${url}`);
-    const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 });
-    result.cspHeader = response.headers['content-security-policy'] || null;
-    
-    const $ = cheerio.load(response.data);
-    
-    // Captura estática básica
-    $('script[src]').each((_, el) => result.resources.push({ type: 'script', url: $(el).attr('src') }));
-    $('link[rel="stylesheet"]').each((_, el) => result.resources.push({ type: 'style', url: $(el).attr('href') }));
-    $('img[src]').each((_, el) => result.resources.push({ type: 'img', url: $(el).attr('src') }));
+    try {
+      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 });
+      result.cspHeader = response.headers['content-security-policy'] || null;
+      
+      const $ = cheerio.load(response.data);
+      
+      // Captura estática básica
+      $('script[src]').each((_, el) => result.resources.push({ type: 'script', url: $(el).attr('src'), duration_ms: null, has_error: false, error_message: null }));
+      $('link[rel="stylesheet"]').each((_, el) => result.resources.push({ type: 'style', url: $(el).attr('href'), duration_ms: null, has_error: false, error_message: null }));
+      $('img[src]').each((_, el) => result.resources.push({ type: 'img', url: $(el).attr('src'), duration_ms: null, has_error: false, error_message: null }));
+    } catch (estaticErr) {
+      console.warn(`[Scanner] Aviso: Falha na análise estática de ${url} (${estaticErr.message}). Prosseguindo apenas com Puppeteer.`);
+    }
 
     console.log(`[Scanner] [2/2] Análise Dinâmica (Puppeteer) iniciada: ${url}`);
-    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+    browser = await puppeteer.launch({
+      headless: 'new',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
     const page = await browser.newPage();
+    await page.setRequestInterception(true);
     
-    // Monitorar rede
+    const resourceTracker = new Map();
+    
+    // Monitorar rede e bloquar SSRF em tempo real
     page.on('request', req => {
+      let parsed;
+      try {
+        parsed = new URL(req.url());
+        // Bloqueia tentativas de ler arquivos locais ou nuvem AWS/GCP
+        if (parsed.protocol === 'file:' || parsed.hostname.startsWith('169.254.')) {
+           return req.abort('accessdenied');
+        }
+      } catch(e) {}
+
       const typeMap = {
         'script': 'script',
         'stylesheet': 'style',
@@ -42,10 +62,35 @@ async function scanPage(url) {
       };
       
       const resType = typeMap[req.resourceType()] || 'other';
-      result.resources.push({
+      const resObj = {
         type: resType,
-        url: req.url()
-      });
+        url: req.url(),
+        start_time: Date.now(),
+        duration_ms: null,
+        has_error: false,
+        error_message: null
+      };
+
+      resourceTracker.set(req, resObj);
+      result.resources.push(resObj);
+      
+      req.continue();
+    });
+
+    page.on('requestfinished', req => {
+      const resObj = resourceTracker.get(req);
+      if (resObj) {
+         resObj.duration_ms = Date.now() - resObj.start_time;
+      }
+    });
+
+    page.on('requestfailed', req => {
+      const resObj = resourceTracker.get(req);
+      if (resObj) {
+         resObj.has_error = true;
+         resObj.error_message = req.failure()?.errorText || 'Falha de requisição ou bloqueio externo';
+         resObj.duration_ms = Date.now() - resObj.start_time;
+      }
     });
 
     try {
@@ -102,7 +147,10 @@ function normalizeResources(resources, baseUrl) {
           type: r.type,
           domain: u.hostname,
           url: fullUrl,
-          isExternal: u.hostname !== baseDomain
+          isExternal: u.hostname !== baseDomain,
+          duration_ms: r.duration_ms || null,
+          has_error: r.has_error || false,
+          error_message: r.error_message || null
         };
       } catch (e) {
         return null;

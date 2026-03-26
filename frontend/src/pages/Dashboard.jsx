@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   LayoutDashboard,
   LogOut,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -64,6 +65,20 @@ const Dashboard = () => {
       fetchTasks();
     } catch (err) {
       alert('Erro ao excluir');
+    }
+  };
+
+  const handleRepeat = async (e, url) => {
+    e.stopPropagation();
+    setError('');
+    setLoading(true);
+    try {
+      await api.post('/tasks', { target_url: url });
+      fetchTasks();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao repetir auditoria');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -195,8 +210,16 @@ const Dashboard = () => {
                             {getStatusLabel(task.status)}
                          </div>
                          <button 
+                            onClick={(e) => handleRepeat(e, task.target_url)}
+                            className="p-2 opacity-0 group-hover:opacity-100 hover:text-secondary transition-all text-zinc-500"
+                            title="Repetir Auditoria"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                         </button>
+                         <button 
                             onClick={(e) => handleDelete(e, task.id)}
                             className="p-2 opacity-0 group-hover:opacity-100 hover:text-danger transition-all text-zinc-500"
+                            title="Excluir Auditoria"
                           >
                             <Trash2 className="w-4 h-4" />
                          </button>

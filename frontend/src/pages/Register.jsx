@@ -7,6 +7,7 @@ import { Shield, Lock, User, CheckCircle } from 'lucide-react';
 const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const { register } = useAuth();
@@ -14,6 +15,10 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem. Verifique e tente novamente.');
+      return;
+    }
     setError('');
     try {
       await register(username, password);
@@ -75,6 +80,20 @@ const Register = () => {
                    type="password" 
                    value={password}
                    onChange={e => setPassword(e.target.value)}
+                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 focus:border-secondary outline-none transition-all"
+                   placeholder="••••••••"
+                   disabled={success}
+                 />
+              </div>
+           </div>
+           <div>
+              <label className="text-sm font-medium text-zinc-400 block mb-2">Confirmar Senha</label>
+              <div className="relative">
+                 <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                 <input 
+                   type="password" 
+                   value={confirmPassword}
+                   onChange={e => setConfirmPassword(e.target.value)}
                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 focus:border-secondary outline-none transition-all"
                    placeholder="••••••••"
                    disabled={success}

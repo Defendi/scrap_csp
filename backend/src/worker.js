@@ -54,21 +54,24 @@ async function processTasks() {
         const pageId = pageRecord.rows[0].id;
 
         // Escanear
+        const startTime = Date.now();
         const scanResult = await scanPage(url);
+        const executionTime = Date.now() - startTime;
         
         // Salvar recursos encontrados -> Protegido com filtro para evitar Null values no db se algo crachar mal
         for (const res of scanResult.resources) {
             if (!res.domain || !res.url) continue;
             await db.query(
-               'INSERT INTO resources_found (page_id, type, domain, source_url) VALUES ($1, $2, $3, $4)',
-               [pageId, res.type, res.domain, res.url]
+               'INSERT INTO resources_found (page_id, type, domain, source_url, duration_ms, has_error, error_message) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+               [pageId, res.type, res.domain, res.url, res.duration_ms, res.has_error || false, res.error_message]
             );
         }
 
         // Atualizar registro da página
+        let status = scanResult.status === 'FAILED' ? 'FAILED' : 'SCRAPED';
         await db.query(
-          'UPDATE pages_scanned SET status = $1, csp_header_found = $2, vulnerabilities = $3 WHERE id = $4',
-          [scanResult.status, scanResult.cspHeader, JSON.stringify(scanResult.vulnerabilities), pageId]
+          'UPDATE pages_scanned SET status = $1, csp_header_found = $2, vulnerabilities = $3, error_message = $4, execution_time_ms = $5 WHERE id = $6',
+          [status, scanResult.cspHeader || null, JSON.stringify(scanResult.vulnerabilities || []), scanResult.error || null, executionTime, pageId]
         );
 
         allPageResults.push(scanResult);

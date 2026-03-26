@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS pages_scanned (
     csp_header_found TEXT,
     vulnerabilities JSONB DEFAULT '[]'::jsonb,
     status TEXT DEFAULT 'PENDING', -- PENDING, SCRAPED, FAILED
+    execution_time_ms INTEGER,
+    error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,6 +41,9 @@ CREATE TABLE IF NOT EXISTS resources_found (
     type resource_type NOT NULL,
     domain TEXT NOT NULL,
     source_url TEXT NOT NULL,
+    duration_ms INTEGER,
+    has_error BOOLEAN DEFAULT FALSE,
+    error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
