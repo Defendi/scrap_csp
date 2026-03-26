@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: oklch(0.6 0.25 260); /* Vibrant Blue */
+  --color-secondary: oklch(0.7 0.2 190); /* Cyan/Teal */
+  --color-accent: oklch(0.6 0.3 320); /* Purple/Indigo */
+  --color-success: oklch(0.7 0.25 140); /* Neon Green */
+  --color-danger: oklch(0.6 0.25 25); /* Deep Red */
+  --color-background: oklch(0.15 0.05 260); /* Deep Dark Blue */
+  --color-surface: oklch(0.2 0.05 260 / 0.8); /* Glass effect bg */
+}
+
+@layer base {
+  body {
+    @apply bg-background text-zinc-100 font-sans antialiased selection:bg-primary/30 selection:text-white;
+  }
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.btn-primary {
+  @apply px-6 py-2 bg-primary hover:bg-primary/80 transition-all rounded-full font-semibold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95;
+}
+
+.card-vibrant {
+  @apply glass p-6 rounded-2xl hover:border-primary/50 transition-colors duration-300;
+}
